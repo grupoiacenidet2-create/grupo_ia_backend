@@ -6,7 +6,7 @@ import dj_database_url
 # Directorio base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Seguridad
+# Seguridad - ¡IMPORTANTE! En Render, asegúrate de tener una SECRET_KEY real en Environment
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-9^ed7dcv-v_nc8$6!x827l-q5yio7l*39gls(k8(=1n04^eaf^')
 
 # DEBUG (En Render esto será False)
@@ -18,20 +18,31 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-ALLOWED_HOSTS = ['*']
+# --- HOSTS PERMITIDOS ---
+ALLOWED_HOSTS = ['*'] # Se puede restringir más adelante a los dominios específicos
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# --- APLICACIONES (ORDEN BLINDADO) ---
+# --- CONFIGURACIÓN DE CORS (CORREGIDO) ---
+# Cambiamos Allow All por una lista específica para proteger tu base de datos
+CORS_ALLOW_ALL_ORIGINS = False 
+CORS_ALLOWED_ORIGINS = [
+    "https://grupo-ia-backend.vercel.app",  # Tu URL de Vercel (Frontend)
+    "http://localhost:3000",                # Desarrollo local
+    "http://localhost:5173",                # Desarrollo local con Vite
+]
+CORS_ALLOW_CREDENTIALS = True
+
+# --- APLICACIONES ---
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',  # 1. SIEMPRE arriba de Cloudinary
-    'cloudinary_storage',         # 2. Maneja Media, pero deja Static a WhiteNoise
+    'django.contrib.staticfiles',
+    'cloudinary_storage',
     'cloudinary',
     'rest_framework',
     'corsheaders',
@@ -41,9 +52,9 @@ INSTALLED_APPS = [
 
 # --- MIDDLEWARE ---
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # Debe ser el primero
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # DEBE IR AQUÍ
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,34 +96,31 @@ TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
 USE_TZ = True
 
-# --- ARCHIVOS ESTÁTICOS (CONFIGURACIÓN WHITE-NOISE BLINDADA) ---
+# --- ARCHIVOS ESTÁTICOS ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Forzamos a WhiteNoise a usar los buscadores de Django para el Admin
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_USE_FINDERS = True 
-WHITENOISE_MANIFEST_STRICT = False # Evita errores si falta algún archivo pequeño
+WHITENOISE_MANIFEST_STRICT = False 
 
-# --- CONFIGURACIÓN DE CLOUDINARY (SOLO PARA MEDIA) ---
+# --- CLOUDINARY (MEDIA) ---
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'dkhhttmhk'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY', '299713792442895'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', '5Ye1sXbXVkxTHOxb6oS7tpqpT24')
 }
 
-# Media se va a la nube, Static se queda en Render
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Seguridad en Producción
+# --- SEGURIDAD EN PRODUCCIÓN ---
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
 APPEND_SLASH = False
 
 # REST FRAMEWORK & JWT
