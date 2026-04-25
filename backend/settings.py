@@ -9,40 +9,41 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Seguridad
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-9^ed7dcv-v_nc8$6!x827l-q5yio7l*39gls(k8(=1n04^eaf^')
 
-# DEBUG
-DEBUG = os.environ.get('RENDER_DEBUG', 'False').lower() == 'true' or 'RENDER' not in os.environ
-AUTHENTICATION_BACKENDS = [
-    'accounts.backends.EmailOrUsernameBackend', # Tu nueva lógica
-    'django.contrib.auth.backends.ModelBackend', # La de siempre (respaldo)
-]
-# Permitir todos los hosts
-ALLOWED_HOSTS = ['*']
-if not DEBUG:
-    RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-    if RENDER_EXTERNAL_HOSTNAME:
-        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# DEBUG (En Render esto será False)
+DEBUG = os.environ.get('RENDER_DEBUG', 'False').lower() == 'true'
 
-# --- APLICACIONES ---
+# Autenticación
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+ALLOWED_HOSTS = ['*']
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# --- APLICACIONES (ORDEN BLINDADO) ---
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',    # Debe ir antes de staticfiles
-    'django.contrib.staticfiles',
-    'cloudinary',            
+    'django.contrib.staticfiles',  # 1. SIEMPRE arriba de Cloudinary
+    'cloudinary_storage',         # 2. Maneja Media, pero deja Static a WhiteNoise
+    'cloudinary',
     'rest_framework',
     'corsheaders',
     'accounts',
     'publications',
 ]
 
-# Middleware
+# --- MIDDLEWARE ---
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # Siempre al principio
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # DEBE IR AQUÍ
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,18 +75,9 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL', 'postgresql://postgres:Postgres123@localhost:5432/cenidet_db'),
-        conn_max_age=600,
-        ssl_require=not DEBUG
+        conn_max_age=600
     )
 }
-
-# Validadores
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
 
 # Internacionalización
 LANGUAGE_CODE = 'es-mx'
@@ -93,33 +85,37 @@ TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
 USE_TZ = True
 
-# --- ARCHIVOS ESTÁTICOS ---
+# --- ARCHIVOS ESTÁTICOS (CONFIGURACIÓN WHITE-NOISE BLINDADA) ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- CONFIGURACIÓN DE CLOUDINARY ---
+# Forzamos a WhiteNoise a usar los buscadores de Django para el Admin
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True 
+WHITENOISE_MANIFEST_STRICT = False # Evita errores si falta algún archivo pequeño
+
+# --- CONFIGURACIÓN DE CLOUDINARY (SOLO PARA MEDIA) ---
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'dkhhttmhk'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY', '299713792442895'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', '5Ye1sXbXVkxTHOxb6oS7tpqpT24')
 }
 
+# Media se va a la nube, Static se queda en Render
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# --- CONFIGURACIÓN DE SEGURIDAD Y CORS ---
+# Seguridad en Producción
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
 
-# Configuración estricta para evitar el error de "Cargando"
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-APPEND_SLASH = False  # Evita problemas de redirección 404 en el Login
+APPEND_SLASH = False
 
-# --- DJANGO REST FRAMEWORK ---
+# REST FRAMEWORK & JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
@@ -129,6 +125,6 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id', # Asegura que use el ID numérico y no el nombre
+    'USER_ID_FIELD': 'id',
     'UPDATE_LAST_LOGIN': True,
 }
