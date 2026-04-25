@@ -93,7 +93,7 @@ useEffect(() => {
               <span className="text-[#49a5e6] font-bold tracking-[0.3em] text-[10px] uppercase">Conectando Ciencia y Futuro</span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-white leading-[1.1] mb-8 tracking-tighter">
-              Área de Inteligencia <span className="text-[#49a5e6]">Artificial</span>
+              Grupo de Inteligencia <span className="text-[#49a5e6]">Artificial</span>
             </h1>
             <p className="text-white/70 text-lg mb-10 max-w-lg leading-relaxed font-light italic border-l-2 border-[#49a5e6] pl-6">
               Investigación de vanguardia y desarrollo tecnológico para los desafíos globales de la nueva era digital.
@@ -280,7 +280,7 @@ useEffect(() => {
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="h-[2px] w-12 bg-[#49a5e6]"></div>
               <h2 className="text-4xl font-black text-white uppercase tracking-[0.25em] italic drop-shadow-lg">
-                Claustro Doctoral
+                Integrantes del grupo
               </h2>
               <div className="h-[2px] w-12 bg-[#49a5e6]"></div>
             </div>
